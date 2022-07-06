@@ -7,6 +7,65 @@ import random
 
 import time
 
+def HavePoint(points,point):
+  for p in points:
+    if p.Equal(point):
+      return True
+  return False
+
+def FindPointsToLay(board,stone):
+  stones=[]
+  for y in range(len(board)):
+    for x in range(len(board)):
+      if(board[y][x]==stone):
+        stones.append(Point(x,y))
+
+  
+  foundPoints=[]
+  for p in stones:
+    FindAmbientPoints(board,foundPoints,p)
+  return foundPoints
+
+def FindAmbientPoints(board,points,center):
+  p=center
+  
+  newPoint=Point(p.X+1,p.Y+1)
+  if CanLay(board,newPoint.X,newPoint.Y) and not HavePoint(points,newPoint):
+    points.append(newPoint)
+      
+  newPoint=Point(p.X-1,p.Y-1)
+  if CanLay(board,newPoint.X,newPoint.Y) and not HavePoint(points,newPoint):
+    points.append(newPoint)
+    
+  newPoint=Point(p.X+1,p.Y-1)
+  if CanLay(board,newPoint.X,newPoint.Y) and not HavePoint(points,newPoint):
+    points.append(newPoint)
+      
+  newPoint=Point(p.X-1,p.Y+1)
+  if CanLay(board,newPoint.X,newPoint.Y) and not HavePoint(points,newPoint):
+    points.append(newPoint)
+    
+  newPoint=Point(p.X+1,p.Y+1)
+  if CanLay(board,newPoint.X,newPoint.Y) and not HavePoint(points,newPoint):
+    points.append(newPoint)
+      
+  newPoint=Point(p.X,p.Y+1)
+  if CanLay(board,newPoint.X,newPoint.Y) and not HavePoint(points,newPoint):
+    points.append(newPoint)
+    
+  newPoint=Point(p.X,p.Y-1)
+  if CanLay(board,newPoint.X,newPoint.Y) and not HavePoint(points,newPoint):
+    points.append(newPoint)
+
+  newPoint=Point(p.X+1,p.Y)
+  if CanLay(board,newPoint.X,newPoint.Y) and not HavePoint(points,newPoint):
+    points.append(newPoint)
+
+  newPoint=Point(p.X-1,p.Y)
+  if CanLay(board,newPoint.X,newPoint.Y) and not HavePoint(points,newPoint):
+    points.append(newPoint)
+
+
 
 
 def GetNextPoint(board,stone):
@@ -57,14 +116,12 @@ def GetNextPoint(board,stone):
 
 def GetBestMove(board,stone):
   results=[]
-  for y in range(len(board)):
-    for x in range(len(board)):
-      
-      if board[y][x]==0:
-        results.append(GetResult(board,x,y,stone))
+  for p in FindPointsToLay(board,stone):
+    results.append(GetResult(board,p.X,p.Y,stone))
+
   if len(results)==0:
     # doomed
-    return Point(random.randint(0,len(board)),random.randint(0,len(board)))
+    return (0,Result(0,0,0))
   
   bestResult=results[0]
   best=results[0].Score
