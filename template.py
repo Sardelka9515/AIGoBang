@@ -5,24 +5,38 @@ from variables import *
 import re
 import random
 
+import time
+
 
 
 def GetNextPoint(board,stone):
+  # print('(hhhhh),',file=sys.stderr)
+
+  # PrintBoard(board)
   results=[]
   for y in range(len(board)):
     for x in range(len(board)):
 
       ## empty
       if board[y][x]==0:
+        
+        # time.sleep(100)
         board[y][x]=stone
         result=Result(Score(GetLines(board,stone),board),x,y)
         
-        # Prevent enemy from winning
+        # Predict enemy move
         enemyMove=GetBestMove(board,3-stone)
+        # print('(hhssshhh),',file=sys.stderr)
+
         # enemyMove[1].Print()
-        if enemyMove[0]<5 or result.Score>=5:
+        if enemyMove[0]<5:
+          if result.Score>=5:
+            result.Score = 1000
+          elif (enemyMove[0] % 1) != 0:
+            result.Score-=(enemyMove[0]+5)
+          else:
+            result.Score-=enemyMove[0]
           # print("original",result.Score)
-          result.Score = 1000 if result.Score>=5 else result.Score-enemyMove[0]
           # print("mixed",result.Score)
           results.append(result)
         board[y][x]=0
@@ -49,7 +63,7 @@ def GetBestMove(board,stone):
       if board[y][x]==0:
         results.append(GetResult(board,x,y,stone))
   if len(results)==0:
-    # We're doomed
+    # doomed
     return Point(random.randint(0,len(board)),random.randint(0,len(board)))
   
   bestResult=results[0]
@@ -68,19 +82,36 @@ def RandomResult(results,bestScore):
     if r.Score==bestScore:
       bestResults.append(r)
 
-  return bestResults[random.randint(0,len(bestResults)-1)]
+  center=Point(7.5,7.5)
+  closetResult=0
+  closetDist=1000000
+  for r in bestResults:
+    d=r.DistanceTo(center)
+    if d<closetDist:
+      closetResult=r
+      closetDist=d
+  
+  return closetResult
+  # return bestResults[random.randint(0,len(bestResults)-1)]
 def Score(lines,board):
   score=-1
   for l in lines:
     s=len(l.Points)
+    if s == 4 and l.Potential(board)==2:
+      s+=0.5
+      # print(str(board[l.Points[0].Y][l.Points[0].X])+"score:"+str(s), file=sys.stderr)
+      # PrintBoard(board)
+      # time.sleep(100)
     if(s > score and not l.IsDead(board)):
       score=s
   # print("score",score)
   return score
 
 def GetResult(board,stepX,stepY,myStone):
+  
   board[stepY][stepX]=myStone
-  res= Result(Score(GetLines(board,myStone),board),stepX,stepY)
+  lines=GetLines(board,myStone)
+  res= Result(Score(lines,board),stepX,stepY)
   board[stepY][stepX]=0
   return res
 def GetLines(board,stone):
@@ -104,8 +135,12 @@ def GetLines(board,stone):
         if len(line.Points)>1 and not HaveLine(lines,Point(x,y),4):
           lines.append(line)
   return lines
-
-
+def PrintBoard(board):
+  for r in board:
+    for c in r:
+      print(c,file=sys.stderr,end="")
+    print("",file=sys.stderr)
+     
 
 
 class Result:
@@ -116,6 +151,9 @@ class Result:
 
   def Print(self):
     print(self.Score,self.X,self.Y)
+  
+  def DistanceTo(self,point):
+    return (self.X-point.X)**2+(self.Y-point.Y)**2
 
 def HaveLine(lines,point,dir):
   for line in lines:
@@ -153,7 +191,7 @@ def Search1(board,point,stone):
 # *    
 def Search2(board,point,stone):
   line=[]
-# forward search
+  # forward search
   for i in range(0,len(board)-point.Y):
     # print("hehe",point.Y+i,point.X-i)
     if point.Y+i>=len(board) or point.X-i<0:
@@ -163,7 +201,7 @@ def Search2(board,point,stone):
     else:
       break
 
-# backward
+  # backward
   for i in range(1,point.Y+1):
     if point.Y-i<0 or point.X+i>=len(board):
       break;
@@ -179,7 +217,7 @@ def Search2(board,point,stone):
 #     
 def Search3(board,point,stone):
   line=[]
-# forward search
+  # forward search
   for i in range(0,len(board)-point.X):
     if point.X+i>=len(board):
       break;
@@ -188,7 +226,7 @@ def Search3(board,point,stone):
     else:
       break
 
-# backward
+  # backward
   for i in range(1,point.X+1):
     if point.X-i<0:
       break;
@@ -203,7 +241,7 @@ def Search3(board,point,stone):
 #   *    
 def Search4(board,point,stone):
   line=[]
-# forward search
+  # forward search
   for i in range(0,len(board)-point.Y):
     if point.Y+i>=len(board):
       break;
@@ -212,7 +250,7 @@ def Search4(board,point,stone):
     else:
       break
 
-# backward
+  # backward
   for i in range(1,point.Y+1):
     if point.Y-i<0:
       break;
@@ -228,6 +266,28 @@ class Point:
   def __init__(self,x,y):
     self.X=x
     self.Y=y
+
+  def __add__(self,p):
+    return Point(self.X+p.X,self.Y+p.Y)
+
+  def __sub__(self,p):
+    return Point(self.X-p.X,self.Y-p.Y)
+
+  def __mul__(self,i):
+    return Point(self.X*i,self.Y*i)
+
+  def __neg__(self):
+    return Point(self.X*-1,self.Y*-1)
+
+  def __eq__(self,p):
+    return self.X == p.X and self.Y == p.Y
+
+  def __truediv__(self,i):
+    return Point(self.X/i,self.Y/i)
+  
+  def ToInt(self):
+    self.X=int(self.X)
+    self.Y=int(self.Y)
   def GetDir(self,point2):
       if point2.X-self.X==point2.Y-self.Y:
         return 1
@@ -250,6 +310,20 @@ class Line:
       if(p.Equal(point)):
         return True
     return False
+
+  def Potential(self,board):
+    first = self.Points[0]
+    last = self.Points[len(self.Points)-1]
+    vec= (last-first)/(len(self.Points)-1)
+    p1=first-vec
+    p1.ToInt()
+    p2=last+vec
+    p2.ToInt()
+    potential=int(CanLay(board,p1.X,p1.Y))+int(CanLay(board,p2.X,p2.Y))
+    # if potential==2:
+      # PrintLine(self)
+      # print("\n("+str(p1.X)+','+str(p1.Y)+'),'+'('+str(p2.X)+','+str(p2.Y)+'),',file=sys.stderr)
+    return potential
   def IsDead(self,board):
     if(len(self.Points)>=5):
       return False
@@ -268,11 +342,11 @@ class Line:
 
 def CanLay(board,x,y):
   size = len (board)
-  return -1 < x and x < size and -1 < y and y < size and board[y][x] == 0
-def PrintLine(line,board):
-  print("Direction:",line.Direction,"IsDead",line.IsDead(board),end=",")
+  return (-1 < x) and (x < size) and (-1 < y) and (y < size) and (board[y][x] == 0)
+def PrintLine(line):
+
   for p in line.Points:
-    print('(',p.X,',',p.Y,')',end=",")
+    print('('+str(p.X)+','+str(p.Y)+'),',file=sys.stderr,end="")
   print()
 
 
