@@ -91,13 +91,17 @@ def GetNextPoint(board,stone):
         if enemyMove[0]<5:
           if result.Score>=5:
             result.Score = 1000
-          elif (enemyMove[0] % 1) != 0:
+          elif enemyMove[0] == 4.5 and result.Score!=4.5:
             result.Score-=(enemyMove[0]+5)
           else:
             result.Score-=enemyMove[0]
           # print("original",result.Score)
           # print("mixed",result.Score)
-          results.append(result)
+        elif result.Score>=5:
+          result.Score = 1000
+        else:
+          result.Score=-100
+        results.append(result)
         board[y][x]=0
 
   
@@ -120,7 +124,7 @@ def GetBestMove(board,stone):
     results.append(GetResult(board,p.X,p.Y,stone))
 
   if len(results)==0:
-    # doomed
+    
     return (0,Result(0,0,0))
   
   bestResult=results[0]
