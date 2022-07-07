@@ -99,7 +99,7 @@ def GetNextPoint(board,stone):
           # print("mixed",result.Score)
         else:
           # return Point(enemyMove[1].X,enemyMove[1].Y)
-          result.Score=-100
+          result.Score-=100
         results.append(result)
         board[y][x]=0
 
