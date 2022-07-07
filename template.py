@@ -80,7 +80,6 @@ def GetNextPoint(board,stone):
       ## empty
       if board[y][x]==0:
         
-        # time.sleep(100)
         board[y][x]=stone
         result=Result(Score(GetLines(board,stone),board),x,y)
         
@@ -99,7 +98,7 @@ def GetNextPoint(board,stone):
           # print("original",result.Score)
           # print("mixed",result.Score)
         else:
-          return Point(enemyMove[1].X,enemyMove[1].Y)
+          # return Point(enemyMove[1].X,enemyMove[1].Y)
           result.Score=-100
         results.append(result)
         board[y][x]=0
@@ -108,13 +107,8 @@ def GetNextPoint(board,stone):
   if len(results)==0:
     # We're doomed
     return Point(random.randint(0,len(board)-1),random.randint(0,len(board)-1))
-    
-  best=results[0].Score
-  for r in results:
-    if r.Score>best:
-      best=r.Score
-
-  bestResult=RandomResult(results,best)
+  
+  bestResult=RandomResult(results)
   # print("score",best)
   return Point(bestResult.X,bestResult.Y)
 
@@ -139,33 +133,44 @@ def GetBestMove(board,stone,moves,pointToIgnore):
   
   return (best,bestResult)
 
-def RandomResult(results,bestScore):
+def RandomResult(results):
+  bestScore=results[0].Score
   bestResults=[]
   for r in results:
     if r.Score==bestScore:
       bestResults.append(r)
+    elif r.Score>bestScore:
+      bestResults=[]
+      bestResults.append(r)
+      bestScore=r.Score
 
-  center=Point(7.5,7.5)
-  closetResult=0
-  closetDist=1000000
+
+  center=Point(7,7)
+  closestDist=results[0].DistanceTo(center)
+  closestResults=[]
   for r in bestResults:
     d=r.DistanceTo(center)
-    if d<closetDist:
-      closetResult=r
-      closetDist=d
+    if d==closestDist:
+      closestResults.append(r)
+    elif d<closestDist:
+      closestResults=[]
+      closestResults.append(r)
+      closestDist=d
   
-  return closetResult
+  return closestResults[random.randint(0,len(closestResults)-1)]
   # return bestResults[random.randint(0,len(bestResults)-1)]
 def Score(lines,board):
   score=-1
   for l in lines:
     s=len(l.Points)
-    if s == 4 and l.Potential(board)==2:
+    if l.Potential(board)==0:
+      continue
+    if l.Potential(board)==2:
       s+=0.5
       # print(str(board[l.Points[0].Y][l.Points[0].X])+"score:"+str(s), file=sys.stderr)
       # PrintBoard(board)
       # time.sleep(100)
-    if(s > score and not l.IsDead(board)):
+    if(s > score):
       score=s
   # print("score",score)
   return score
