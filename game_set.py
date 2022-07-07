@@ -4,7 +4,7 @@
     測試模式說明：每一步棋皆等待玩家操作，若按下空白鍵，則由程式下出下一手，若用滑鼠點按則可直接下下一手棋。
 3. competition mode
 '''
-mode = 3
+mode = 2
 
 '''
 requirement:
@@ -14,8 +14,8 @@ requirement:
 
 請輸入你的程式的路徑，其中檔名的部分會成為隊名
 '''
-team_a_path = 'template.py'
-team_b_path = 'template.py'
+team_a_path = 'Sardelka_G6.py'
+team_b_path = 'Sardelka_G6.py'
 
 '''
 time delay between each step (unit: ms)
