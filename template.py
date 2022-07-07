@@ -73,6 +73,7 @@ def GetNextPoint(board,stone):
 
   # PrintBoard(board)
   results=[]
+  enemyMoves=FindPointsToLay(board,3-stone)
   for y in range(len(board)):
     for x in range(len(board)):
 
@@ -84,22 +85,21 @@ def GetNextPoint(board,stone):
         result=Result(Score(GetLines(board,stone),board),x,y)
         
         # Predict enemy move
-        enemyMove=GetBestMove(board,3-stone)
+        enemyMove=GetBestMove(board,3-stone,enemyMoves,Point(x,y))
         # print('(hhssshhh),',file=sys.stderr)
 
         # enemyMove[1].Print()
+        if result.Score>=5:
+            return Point(result.X,result.Y)
         if enemyMove[0]<5:
-          if result.Score>=5:
-            result.Score = 1000
-          elif enemyMove[0] == 4.5 and result.Score!=4.5:
+          if enemyMove[0] == 4.5 and result.Score!=4.5:
             result.Score-=(enemyMove[0]+5)
           else:
             result.Score-=enemyMove[0]
           # print("original",result.Score)
           # print("mixed",result.Score)
-        elif result.Score>=5:
-          result.Score = 1000
         else:
+          return Point(enemyMove[1].X,enemyMove[1].Y)
           result.Score=-100
         results.append(result)
         board[y][x]=0
@@ -118,9 +118,11 @@ def GetNextPoint(board,stone):
   # print("score",best)
   return Point(bestResult.X,bestResult.Y)
 
-def GetBestMove(board,stone):
+def GetBestMove(board,stone,moves,pointToIgnore):
   results=[]
-  for p in FindPointsToLay(board,stone):
+  for p in moves:
+    if pointToIgnore==p:
+      continue
     results.append(GetResult(board,p.X,p.Y,stone))
 
   if len(results)==0:
