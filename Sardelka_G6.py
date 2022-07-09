@@ -70,71 +70,78 @@ def FindAmbientPoints(board,points,center):
 
 def GetNextPoint(board,stone):
   # print('(hhhhh),',file=sys.stderr)
-
-  # PrintBoard(board)
-  results=[]
-  dead=[]
-  enemyMoves=FindPointsToLay(board,3-stone)
+  lines=GetLines(board,stone)
+  print('found '+str(len(lines))+' on board',file=sys.stderr)
+  for l in lines:
+    PrintLine(l)
+  win1=[]
+  lose1=[]
+  win2=[]
+  lose2=[]
+  myMoves=[]
+  enemyMoves=[]
   for y in range(len(board)):
     for x in range(len(board)):
-
       ## empty
       if board[y][x]==0:
-        
-        board[y][x]=stone
-        result=Result(Score(GetLines(board,stone),board),x,y)
-        
-        # Predict enemy move
-        enemyMove=GetBestMove(board,3-stone,enemyMoves,Point(x,y))
-        # print('(hhssshhh),',file=sys.stderr)
-
-        # enemyMove[1].Print()
+        result=GetResult(board,x,y,stone)
         if result.Score>=5:
-            return Point(result.X,result.Y)
-        if enemyMove[0]<5:
-          if enemyMove[0] == 4.5 and result.Score!=4.5:
-            result.Score-=(enemyMove[0]+5)
-          else:
-            result.Score-=enemyMove[0]
-          # print("original",result.Score)
-          # print("mixed",result.Score)
+          
+          # print('will win in 1 move',file=sys.stderr)
+          win1.append(result)
+        elif result.Score==4.5:
+
+          
+          # print('will win in 1 move',file=sys.stderr)
+          win2.append(result)
         else:
-          # return Point(enemyMove[1].X,enemyMove[1].Y)
-          result.Score-=100
-          dead.append(enemyMove[1])
-        results.append(result)
-        board[y][x]=0
+          myMoves.append(result)
 
-  for d in dead:
-    return Point(d.X,d.Y)
-  if len(results)==0:
-    # We're doomed
-    return Point(random.randint(0,len(board)-1),random.randint(0,len(board)-1))
+  # Predict enemy move
+  for y in range(len(board)):
+    for x in range(len(board)):
+      ## empty
+      if board[y][x]==0:
+        result=GetResult(board,x,y,3-stone)
+        if result.Score>=5:
+          # print('will lose in 1 move',file=sys.stderr)
+          lose1.append(result)
+
+        elif result.Score==4.5:
+          # print('will lose in 2 move',file=sys.stderr)
+
+          lose2.append(result)
+        else:
+          enemyMoves.append(result)
+
+  if len(win1)!=0:
+    # Win
+    return RandomResult(win1)
+
+  elif len(lose1)!=0:
+    return RandomResult(lose1)
+
+  elif len(win2)!=0:
+    return RandomResult(win2)
   
-  bestResult=RandomResult(results)
-  # print("score",best)
-  return Point(bestResult.X,bestResult.Y)
+  elif len(lose2)!=0:
+    return RandomResult(lose2)
 
-def GetBestMove(board,stone,moves,pointToIgnore):
-  results=[]
-  for p in moves:
-    if pointToIgnore==p:
-      continue
-    results.append(GetResult(board,p.X,p.Y,stone))
-
-  if len(results)==0:
+  else:
+    results=[]
+    for mv in myMoves:
     
-    return (0,Result(0,0,0))
-  
-  bestResult=results[0]
-  best=results[0].Score
-  
-  for r in results:
-    if r.Score>best:
-      best=r.Score
-      bestResult=r
-  
-  return (best,bestResult)
+      # find best enemy move
+      bestEnemyScore=0
+      for emv in enemyMoves:
+        if emv.X==mv.X and emv.Y==mv.Y:
+          continue
+        elif emv.Score>bestEnemyScore:
+          bestEnemyScore=emv.Score
+      mv.Score-=bestEnemyScore
+      results.append(mv)
+
+    return RandomResult(results)
 
 def RandomResult(results):
   bestScore=results[0].Score
@@ -159,14 +166,15 @@ def RandomResult(results):
       closestResults=[]
       closestResults.append(r)
       closestDist=d
-  
+  if len(closestResults)==1:
+    return closestResults[0]
   return closestResults[random.randint(0,len(closestResults)-1)]
   # return bestResults[random.randint(0,len(bestResults)-1)]
 def Score(lines,board):
   score=-1
   for l in lines:
     s=len(l.Points)
-    if l.Potential(board)==0:
+    if l.Potential(board)==0 and s<5:
       continue
     if l.Potential(board)==2:
       s+=0.5
@@ -181,8 +189,7 @@ def Score(lines,board):
 def GetResult(board,stepX,stepY,myStone):
   
   board[stepY][stepX]=myStone
-  lines=GetLines(board,myStone)
-  res= Result(Score(lines,board),stepX,stepY)
+  res= Result(Score(GetLines(board,myStone),board),stepX,stepY)
   board[stepY][stepX]=0
   return res
 def GetLines(board,stone):
@@ -190,22 +197,25 @@ def GetLines(board,stone):
   for y in range(0,len(board)):
     for x in range(0,len(board)):
       if board[y][x]==stone:
-        line=Search1(board,Point(x,y),stone)
-        if len(line.Points)>1 and not HaveLine(lines,Point(x,y),1):
+        line=Search(board,Point(x,y),stone,Point(1,1))
+        if len(line.Points)>1 and not HaveLine(lines,line):
           lines.append(line)
 
-        line=Search2(board,Point(x,y),stone)
-        if len(line.Points)>1 and not HaveLine(lines,Point(x,y),2):
+        line=Search(board,Point(x,y),stone,Point(1,-1))
+        if len(line.Points)>1 and not HaveLine(lines,line):
           lines.append(line)
 
-        line=Search3(board,Point(x,y),stone)
-        if len(line.Points)>1 and not HaveLine(lines,Point(x,y),3):
+        line=Search(board,Point(x,y),stone,Point(1,0))
+        if len(line.Points)>1 and not HaveLine(lines,line):
           lines.append(line)
 
-        line=Search4(board,Point(x,y),stone)
-        if len(line.Points)>1 and not HaveLine(lines,Point(x,y),4):
+        line=Search(board,Point(x,y),stone,Point(0,1))
+        if len(line.Points)>1 and not HaveLine(lines,line):
           lines.append(line)
+  
   return lines
+  
+  
 def PrintBoard(board):
   for r in board:
     for c in r:
@@ -226,112 +236,36 @@ class Result:
   def DistanceTo(self,point):
     return (self.X-point.X)**2+(self.Y-point.Y)**2
 
-def HaveLine(lines,point,dir):
-  for line in lines:
-        if line.Direction==dir and line.HasPoint(point):
+def HaveLine(lines,line):
+  for l in lines:
+        if l.First==line.First:
           return True
   return False
 
 
-# *
-#   *
-#     *
-def Search1(board,point,stone):
+
+
+def Search(board,point,stone,vec):
   line=[]
-  # forward search
-  for i in range(0,len(board)-point.Y):
-    if point.Y+i>=len(board) or point.X+i>=len(board[0]):
-      break;
-    if board[point.Y+i][point.X+i] == stone:
-      line.append(Point(point.X+i,point.Y+i))
-    else:
-      break
-    # backward
-  for i in range(1,point.Y+1):
-    if point.Y-i<0 or point.X-i<0:
-      break;
-    
-    if board[point.Y-i][point.X-i] == stone:
-      line.insert(0,Point(point.X-i,point.Y-i))
-    else:
-      break
-  return Line(line,1)
+
+  i=0
+  p=point
+  # Forward
+  while InRange(p,board) and board[p.Y][p.X]==stone:
+    line.append(p)
+    i+=1
+    p=point+vec*i
   
-#     *
-#   *
-# *    
-def Search2(board,point,stone):
-  line=[]
-  # forward search
-  for i in range(0,len(board)-point.Y):
-    # print("hehe",point.Y+i,point.X-i)
-    if point.Y+i>=len(board) or point.X-i<0:
-      break;
-    if board[point.Y+i][point.X-i] == stone:
-      line.append(Point(point.X-i,point.Y+i))
-    else:
-      break
+  i=-1
+  p=point+vec*i
 
   # backward
-  for i in range(1,point.Y+1):
-    if point.Y-i<0 or point.X+i>=len(board):
-      break;
-    # print("checking",point.Y-i,point.X+i)
-    if board[point.Y-i][point.X+i] == stone:
-      line.insert(0,Point(point.X+i,point.Y-i))
-    else:
-      break
-  return Line(line,2)
-
-#     
-# * * *
-#     
-def Search3(board,point,stone):
-  line=[]
-  # forward search
-  for i in range(0,len(board)-point.X):
-    if point.X+i>=len(board):
-      break;
-    if board[point.Y][point.X+i] == stone:
-      line.append(Point(point.X+i,point.Y))
-    else:
-      break
-
-  # backward
-  for i in range(1,point.X+1):
-    if point.X-i<0:
-      break;
-    if board[point.Y][point.X-i] == stone:
-      line.insert(0,Point(point.X-i,point.Y))
-    else:
-      break
-  return Line(line,3)
-
-#   *     
-#   *
-#   *    
-def Search4(board,point,stone):
-  line=[]
-  # forward search
-  for i in range(0,len(board)-point.Y):
-    if point.Y+i>=len(board):
-      break;
-    if board[point.Y+i][point.X] == stone:
-      line.append(Point(point.X,point.Y+i))
-    else:
-      break
-
-  # backward
-  for i in range(1,point.Y+1):
-    if point.Y-i<0:
-      break;
-    if board[point.Y-i][point.X] == stone:
-      line.insert(0,Point(point.X,point.Y-i))
-    else:
-      break
-  return Line(line,4)
+  while InRange(p,board) and board[p.Y][p.X]==stone:
+    line.insert(0,p)
+    i-=1
+    p=point+vec*i
   
-
+  return Line(line)
 
 class Point:
   def __init__(self,x,y):
@@ -372,9 +306,8 @@ class Point:
     return (point.X==self.X) and (point.Y==self.Y)
     
 class Line:
-  def __init__(self,points,dir):
+  def __init__(self,points):
     self.Points=points
-    self.Direction=dir
     self.First = self.Points[0]
     self.Last = self.Points[len(self.Points)-1]
     if len(self.Points)<=1:
@@ -403,22 +336,12 @@ class Line:
       # PrintLine(self)
       # print("\n("+str(p1.X)+','+str(p1.Y)+'),'+'('+str(p2.X)+','+str(p2.Y)+'),',file=sys.stderr)
     return potential
-  def IsDead(self,board):
-    if(len(self.Points)>=5):
-      return False
-    first = self.Points[0]
-    last = self.Points[len(self.Points)-1]
-    if self.Direction == 1:
-      return not(CanLay(board,first.X-1,first.Y-1) or CanLay(board,last.X+1,last.Y+1))
-    elif self.Direction == 2:
-      return not(CanLay(board,first.X+1,first.Y-1) or CanLay(board,last.X-1,last.Y+1))
-    elif self.Direction == 3:
-      return not(CanLay(board,first.X-1,first.Y) or CanLay(board,last.X+1,last.Y))
-    elif self.Direction == 4:
-      return not(CanLay(board,first.X,first.Y-1) or CanLay(board,last.X,last.Y+1))
-    else:
-      return False
 
+def InRange(point,board):
+  x=point.X
+  y=point.Y
+  size=len(board)
+  return (-1 < x) and (x < size) and (-1 < y) and (y < size)
 def CanLay(board,x,y):
   size = len (board)
   return (-1 < x) and (x < size) and (-1 < y) and (y < size) and (board[y][x] == 0)
@@ -426,7 +349,7 @@ def PrintLine(line):
 
   for p in line.Points:
     print('('+str(p.X)+','+str(p.Y)+'),',file=sys.stderr,end="")
-  print()
+  print(file=sys.stderr)
 
 
 '''
