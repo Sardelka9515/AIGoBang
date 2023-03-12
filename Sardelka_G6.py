@@ -80,19 +80,17 @@ def GetNextPoint(board,stone):
   lose2=[]
   myMoves=[]
   enemyMoves=[]
+  # Calculate possible moves
   for y in range(len(board)):
     for x in range(len(board)):
-      ## empty
+      ## check if point is empty
       if board[y][x]==0:
         result=GetResult(board,x,y,stone)
         if result.Score>=5:
-          
-          # print('will win in 1 move',file=sys.stderr)
+          # will win in 1 move
           win1.append(result)
         elif result.Score==4.5:
-
-          
-          # print('will win in 1 move',file=sys.stderr)
+          # will win in 2 moves
           win2.append(result)
         else:
           myMoves.append(result)
@@ -100,22 +98,25 @@ def GetNextPoint(board,stone):
   # Predict enemy move
   for y in range(len(board)):
     for x in range(len(board)):
-      ## empty
+      ## check if point is empty
       if board[y][x]==0:
         result=GetResult(board,x,y,3-stone)
         if result.Score>=5:
-          # print('will lose in 1 move',file=sys.stderr)
+          # will lose in 1 move
           lose1.append(result)
 
         elif result.Score==4.5:
-          # print('will lose in 2 move',file=sys.stderr)
-
+          # will lose in 2 moves
           lose2.append(result)
         else:
           enemyMoves.append(result)
-
+  
+  # RandomResult: Search the result with highest score in the given set
+  # Then find the points closest to the center, 
+  # if there're multiple points with same distance to center, return a random one among them
+  
+  # Prioritize moves
   if len(win1)!=0:
-    # Win
     return RandomResult(win1)
 
   elif len(lose1)!=0:
@@ -128,12 +129,14 @@ def GetNextPoint(board,stone):
     return RandomResult(lose2)
 
   else:
+    # Nothing big will happen, proceed with normal evaluation
     results=[]
     for mv in myMoves:
     
       # find best enemy move
       bestEnemyScore=0
       for emv in enemyMoves:
+        # Skip conflicting enemy moves
         if emv.X==mv.X and emv.Y==mv.Y:
           continue
         elif emv.Score>bestEnemyScore:
@@ -169,7 +172,7 @@ def RandomResult(results):
   if len(closestResults)==1:
     return closestResults[0]
   return closestResults[random.randint(0,len(closestResults)-1)]
-  # return bestResults[random.randint(0,len(bestResults)-1)]
+
 def Score(lines,board):
   score=-1
   for l in lines:
