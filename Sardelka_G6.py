@@ -69,37 +69,38 @@ def FindAmbientPoints(board,points,center):
 
 
 def GetNextPoint(board,stone):
-  # print('(hhhhh),',file=sys.stderr)
-
-  # PrintBoard(board)
   results=[]
   dead=[]
   enemyMoves=FindPointsToLay(board,3-stone)
   for y in range(len(board)):
     for x in range(len(board)):
 
-      ## empty
+      # Check for empty point
       if board[y][x]==0:
         
         board[y][x]=stone
         result=Result(Score(GetLines(board,stone),board),x,y)
         
-        # Predict enemy move
+        # Predict enemy move, 
+        # this will cycle through the given set
+        # and find the point with highest score
+        # This is the major performance bottleneck 
         enemyMove=GetBestMove(board,3-stone,enemyMoves,Point(x,y))
-        # print('(hhssshhh),',file=sys.stderr)
-
-        # enemyMove[1].Print()
+        
         if result.Score>=5:
+            # Return immediately if we can win in this point
             return Point(result.X,result.Y)
         if enemyMove[0]<5:
+          # Penalty for losing in 2 moves
           if enemyMove[0] == 4.5 and result.Score!=4.5:
             result.Score-=(enemyMove[0]+5)
           else:
+            # Normal evaluation
             result.Score-=enemyMove[0]
-          # print("original",result.Score)
-          # print("mixed",result.Score)
         else:
-          # return Point(enemyMove[1].X,enemyMove[1].Y)
+          # Will lose in next move, so add this to block list
+          # Don't return now as the cycle might not be complete yet
+          # so we still have chance to win
           result.Score-=100
           dead.append(enemyMove[1])
         results.append(result)
@@ -108,11 +109,11 @@ def GetNextPoint(board,stone):
   for d in dead:
     return Point(d.X,d.Y)
   if len(results)==0:
-    # We're doomed
+    # Doomed
     return Point(random.randint(0,len(board)-1),random.randint(0,len(board)-1))
   
+  # Find the point with highest score and is closest to center
   bestResult=RandomResult(results)
-  # print("score",best)
   return Point(bestResult.X,bestResult.Y)
 
 def GetBestMove(board,stone,moves,pointToIgnore):
