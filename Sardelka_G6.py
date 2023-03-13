@@ -69,8 +69,8 @@ def FindAmbientPoints(board,points,center):
 
 
 def GetNextPoint(board,stone):
-  results=[]
-  dead=[]
+  results=[] # Possible next moves
+  dead=[] # Moves that musy be blocked othewise we'll lose
   # Find points nearby enemy stones to reduce calculation cycles
   enemyMoves=FindPointsToLay(board,3-stone)
   for y in range(len(board)):
